@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="stylesheet" href="../theme/default/style.css" type="text/css">
+    <link rel="stylesheet" href="style.css" type="text/css">
+    <script src="openlayers/OpenLayers.js"></script>
+    <script src="jquery/jquery.min.js"></script>
+    <script type="text/javascript">
+        var lon = 5;
+        var lat = 40;
+        var zoom = 5;
+        var map, layer;
+
+        function init(){
+            map = new OpenLayers.Map( 'map' );
+            layer = new OpenLayers.Layer.WMS( "OpenLayers WMS", 
+                    "http://vmap0.tiles.osgeo.org/wms/vmap0",
+                    {layers: 'basic'} );
+            map.addLayer(layer);
+            map.setCenter(new OpenLayers.LonLat(lon, lat), zoom);
+	
+			var styleMap = new OpenLayers.StyleMap({pointRadius: 40}
+                         /*externalGraphic: '${thumbnail}'} */);
+
+			var geojson_layer = new OpenLayers.Layer.Vector("GeoJSON", {
+		        strategies: [new OpenLayers.Strategy.Fixed()],
+		        protocol: new OpenLayers.Protocol.HTTP({
+		            //url: "cache/kml-volcano.geojson",
+		            //url: "test.geojson",
+		            url: "test2.geojson",
+		            format: new OpenLayers.Format.GeoJSON()
+		        }),
+				styleMap: styleMap
+		    });
+
+			console.log(geojson_layer);
+
+	        map.addLayer(geojson_layer);
+
+
+
+        }
+    </script>
+  </head>
+  <body onload="init()">
+    <div id="map" style="width: 700px; height: 500px;"></div>
+  </body>
+</html>
+
