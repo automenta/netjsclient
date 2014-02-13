@@ -123,6 +123,7 @@ function renderFocus() {
 
     fe.append(noe);
 
+
 	if ((configuration.avatarMenuTagTreeAlways) || (focusValue.what)) {
 		var tt = newFocusTagTree(focusValue, function(tag, newStrength) {
 
@@ -133,12 +134,12 @@ function renderFocus() {
 				objRemoveValue(focusValue, existingIndex);
 
 			if (newStrength > 0) {
-	            objAddTag(focusValue, tag, newStrength);
+		        objAddTag(focusValue, tag, newStrength);
 			}
 
-		    renderFocus();
+			renderFocus();
 		});
-		tt.attr('style', 'height: ' + Math.floor($(window).height()*0.4) + 'px !important' );
+		tt.attr('style', 'height: ' + Math.floor($(window).height()*0.6) + 'px !important' );
 		fe.append(tt);
 	}
     if (focusValue.when) {

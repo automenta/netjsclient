@@ -1,6 +1,12 @@
 exports.layers = [
 	"Alerts",
 	{section:"Weather",icon:"http://climateviewer.com/gallery/nws_google.gif"},
+
+		{layer:'owm-clouds',tileLayer:'http://{s}.tile.openweathermap.org/map/clouds/{z}/{x}/{y}.png',
+			defaultStrength:0.5, source:"OpenWeatherMap.org", sourceURL:'http://openweathermap.org',name:"Clouds", tag:['Weather']},
+		{layer:'owm-precipitation',tileLayer:'http://{s}.tile.openweathermap.org/map/precipitation_cls/{z}/{x}/{y}.png',
+			defaultStrength:0.5, source:"OpenWeatherMap.org", sourceURL:'http://openweathermap.org',name:"Precipitation", tag:['Weather']},
+
 		{layer:'kml-nwswarn',kml:'http://wdssii.nssl.noaa.gov/realtime/nws_warnings.kmz',source:"NOAA National Severe Storms Laboratory, Warning Decision Support System - Integrated Information (WDSS-II)",sourceURL:'http://wdssii.nssl.noaa.gov/',name:"Current Warnings", tag:['Weather']},
 		{layer:"kml-nwshlog",kml:"http://wdssii.nssl.noaa.gov/geotiff/kml/NwsHourlyStormLogs.kml",source:"NOAA National Severe Storms Laboratory, Warning Decision Support System - Integrated Information (WDSS-II)",sourceURL:"http://wdssii.nssl.noaa.gov/",name:"Hourly Storm Log", tag:['Weather']},
 		{layer:"kml-nwsdlog",kml:"http://wdssii.nssl.noaa.gov/geotiff/kml/NwsDailyStormLogs.kml",source:"NOAA National Severe Storms Laboratory, Warning Decision Support System - Integrated Information (WDSS-II)",sourceURL:"http://wdssii.nssl.noaa.gov/",name:"Daily Storm Log", tag:['Weather']},

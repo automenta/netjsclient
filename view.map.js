@@ -150,7 +150,7 @@ function renderMap(s, o, v) {
             mm.location = m.location;*/
 
             var m = renderLeafletMap(s, o, v);
-
+			mm.onChange = m.onChange;
         }
         else {
 			var m = renderCesiumMap(o, v);
@@ -171,9 +171,6 @@ function renderLeafletMap(s, o, v) {
 	var mapdiv = $('<div style="width: 100%; height: 100%"/>').attr('id', e).appendTo(v);
 
 	var tooltip = $('<div class="lltooltip"/>');
-	tooltip.css('position', 'fixed');
-	tooltip.css('z-index', '10000');
-	tooltip.css('pointer-events', 'none');
 	tooltip.appendTo(mapdiv);
 	tooltip.hide();
 
@@ -211,54 +208,133 @@ function renderLeafletMap(s, o, v) {
 		layer.bindPopup(popupContent);
 	}
 
-		$.getJSON('geo/data/ccr07.geojson', function(x) {
-			L.geoJson(x, {
+	map.layers = { };
 
-				/*style: function (feature) {
-					return feature.properties && feature.properties.style;
-				},*/
+	function addLayer(tag, strength, onAdded) {
+		var T = $N.getTag(tag);
 
-				onEachFeature: onEachFeature,
+		if (T.geoJSON) {
+			$.getJSON(T.geoJSON, function(x) {
+				var g = L.geoJson(x, {
 
-				pointToLayer: function (feature, latlng) {
-					/*var m = L.circleMarker(latlng, {
-						radius: 8,
-						fillColor: "#ff7800",
-						color: "#000",
-						weight: 1,
-						opacity: 1,
-						fillOpacity: 0.8
-					});*/
+					/*style: function (feature) {
+						return feature.properties && feature.properties.style;
+					},*/
 
-					var m = L.marker(latlng, {
-						icon: testIcon
-					});
+					onEachFeature: onEachFeature,
 
-					if (feature.properties) {
-						var name = feature.properties.name;
-						if (name) {							
-							m.on('mouseover', function(e) {
-								later(function() {
-									tooltip.css('left', e.originalEvent.clientX);
-									tooltip.css('top', e.originalEvent.clientY);
+					pointToLayer: function (feature, latlng) {
+						/*var m = L.circleMarker(latlng, {
+							radius: 8,
+							fillColor: "#ff7800",
+							color: "#000",
+							weight: 1,
+							opacity: 1,
+							fillOpacity: 0.8
+						});*/
 
-									tooltip.html(name.substring(0, 40));
-									tooltip.show();
+						var m = L.marker(latlng, {
+							icon: testIcon
+						});
+
+						if (feature.properties) {
+							var name = feature.properties.name;
+							if (name) {							
+								m.on('mouseover', function(e) {
+									later(function() {
+										tooltip.css('left', e.originalEvent.clientX);
+										tooltip.css('top', e.originalEvent.clientY);
+
+										tooltip.html(name.substring(0, 40));
+										tooltip.show();
+									});
 								});
-							});
-							m.on('mouseout', function(e) {
-								later(function() {
-									tooltip.hide();
+								m.on('mouseout', function(e) {
+									later(function() {
+										tooltip.hide();
+									});
 								});
-							});
+							}
 						}
+
+						return m;
 					}
+				})
+				g.addTo(map);
+				onAdded(g);
+			});
 
-					return m;
-				}
-			}).addTo(map);
-		});
 
+		}
+		else if (T.tileLayer) {
+			var tl = L.tileLayer(T.tileLayer, {
+				attribution: ''
+			});
+			tl.setOpacity(strength);
+			tl.addTo(map);
+			onAdded(tl);
+		}
+		else {
+		}
+
+		return null;
+	}
+
+	function removeLayer(S) {
+		var rm = map.layers[S];
+		if (rm) {
+			map.removeLayer(rm);
+		}
+		delete map.layers[S];			
+	}
+
+	function updateMap() {
+		var newLayersArray = $N.get('focus').value;
+
+		if (!newLayersArray) return;
+
+		var newlayers = { };
+
+		for (var i = 0; i < newLayersArray.length; i++) {
+			var A = newLayersArray[i];
+			newlayers[A.id] = A.strength;
+		}
+
+		var subtracting = _.difference( _.keys(map.layers), _.keys(newlayers) );
+		var adding = _.difference( _.keys(newlayers), _.keys(map.layers) );
+		var same = _.union( _.keys(newlayers), _.keys(map.layers) );
+
+		for (var i = 0; i < subtracting.length; i++) {
+			var S = subtracting[i];
+			removeLayer(S);
+		}
+		for (var i = 0; i < adding.length; i++) {
+			var A = adding[i];
+			addLayer(A, newlayers[A], function(added) {
+				map.layers[A] = added;
+			});			
+		}
+
+		//update opacities
+		for (var i = 0; i < same.length; i++) {
+			var S = same[i];
+			var SL = map.layers[S];
+			if (SL) {
+				if (SL.setOpacity)
+					SL.setOpacity(newlayers[S]);
+				//TODO setZIndex(..)
+			}
+		}
+
+	}
+
+	updateMap();
+
+	map.onChange = function() {
+	    updateMap();
+	};
+
+	return map;
 }
 
 function renderOLMap(s, o, v) {

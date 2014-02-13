@@ -3,6 +3,7 @@
  * Discombobulated by @rezn8d
  */
 
+.smalltext { font-size: 70%; }
 .ui-autocomplete {  z-index: 5000 !important; }
 
 #welcomeoptions { 
@@ -16,6 +17,9 @@
 	background-color: white;
 	border: 1px solid black;
 	color: black;
+	position: fixed;
+	z-index: 10000;
+	pointer-events: none;
 }
 
 .focusMap {
@@ -265,11 +269,11 @@ div.olMapViewport {
     margin-right: 0.25em;    
 }
 
-.tag0 { opacity: 0.5; font-size: 80%  }
-.tag25 { opacity: 0.7; font-size: 85%  }
-.tag50 { opacity: 0.8; font-size: 90%  }
-.tag75 { opacity: 0.9; font-size: 95%  }
-.tag100 { opacity: 1.0; font-size: 100%  }*
+.tag0 { opacity: 0.5;  }
+.tag25 { opacity: 0.7;  }
+.tag50 { opacity: 0.8;  }
+.tag75 { opacity: 0.9;  }
+.tag100 { opacity: 1.0;  }
 
 
 .tagButtons {
@@ -829,7 +833,6 @@ div.olControlZoom { top:auto !important; bottom:8px !important; }
 }
 #FocusEdit .ObjectEditDiv div {
     width: auto;
-    float: left;
 }
 
 .PluginID {

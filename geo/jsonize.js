@@ -33,7 +33,7 @@ var layerTags = [];
 	lat/lon bounds?
 */
 
-var maxKMLSize = 1400000;
+var maxKMLSize = 10000;
 
 /*
 layerTags.push([ 
@@ -59,92 +59,101 @@ _.each(layers, function(L) {
 
 	var name = L.name;
 
-	var kmlurl = L.kml;
-	if (kmlurl.indexOf('http://')!=0) return;
-
-	var filename = 'cache/' + id + '.kml';
-	var r;
-
-	var start = Date.now();
-
-	try {
-		r = fs.readFileSync(filename, 'utf8');
-	}
-	catch (e) { 
-		var ll = {
-			uri: id,
-			name: name,
-			description: 'Not found'
-		};
-		if (L.tag)
-			ll.tag = L.tag;
-		layerTags.push(ll);
-		return; 
-	}
-
-	var kmlSize = r.length;
-
-	if (kmlSize > maxKMLSize) {
-		var ll = {
-			uri: id,
-			name: name,
-			description: 'Too Large (' + kmlSize + ')'
-		};
-		if (L.tag)
-			ll.tag = L.tag;
-		layerTags.push(ll);
-		return;
-	}
-
-	console.log('Converting ' + id);
-
-	parser.parseString(r, function (err, result) {
-		fs.writeFileSync('cache/' + id + '.json', JSON.stringify(result));
-	});
-
-	var kml = jsdom(r);
-
-	var g = togeojson.kml(kml, { styles: true });
-	
-	var json = JSON.stringify(g);
-	fs.writeFileSync('data/' + id + '.geojson', json);
-
-	var end = Date.now();
-
-
-	var numFeature = g.features  ? g.features.length : 0;
-	var numOverlay = g.overlays ? g.overlays.length : 0;
-	var numPoint = 0, numLineString = 0, numPolygon = 0;
-	var numStyle = g.styles ? g.styles.length : 0;
-	var numNetworkLink = g.links ? g.links.length : 0;
-
-	if (g.features) {
-		for (var i = 0; i < g.features.length; i++) {
-			var f = g.features[i];
-			if (f.geometry) {
-				var type = f.geometry.type;
-				if (type == 'Point') numPoint++;
-				if (type == 'LineString') numLineString++;
-				if (type == 'Polygon') numPolygon++;
-			}
-		}
-	}
-
-	var time = (end - start);
-
 	var ll = {
 		uri: id,
 		name: name,
-		include: '/geo/data/' + id + '.geojson',
-		description: JSON.stringify([ 
-		'OK', kmlSize, json.length,
-		numFeature, numPoint, numLineString, numPolygon, numOverlay,
-		numStyle, numNetworkLink,
-		time
-		])
+		description: (L.source || '')
 	};
 	if (L.tag)
 		ll.tag = L.tag;
+
+	if (L.defaultStrength)
+		ll.defaultStrength = L.defaultStrength;
+
+	if (L.tileLayer) {
+		ll.tileLayer = L.tileLayer;
+	}
+	else if (L.kml) {
+		var kmlurl = L.kml;
+		if (kmlurl.indexOf('http://')!=0) return;
+
+		var filename = 'cache/' + id + '.kml';
+		var r;
+
+		var start = Date.now();
+
+		try {
+			r = fs.readFileSync(filename, 'utf8');
+		}
+		catch (e) { 
+			var ll = {
+				uri: id,
+				name: name,
+				description: 'Not Available'
+			};
+			if (L.tag)
+				ll.tag = L.tag;
+			layerTags.push(ll);
+			return; 
+		}
+
+		var kmlSize = r.length;
+
+		if (kmlSize > maxKMLSize) {
+			var ll = {
+				uri: id,
+				name: name,
+				description: 'Not Available'
+			};
+			if (L.tag)
+				ll.tag = L.tag;
+			layerTags.push(ll);
+			return;
+		}
+
+		console.log('Converting ' + id);
+
+		parser.parseString(r, function (err, result) {
+			fs.writeFileSync('cache/' + id + '.json', JSON.stringify(result));
+		});
+
+		var kml = jsdom(r);
+
+		var g = togeojson.kml(kml, { styles: true });
+	
+		var json = JSON.stringify(g);
+		fs.writeFileSync('data/' + id + '.geojson', json);
+
+		var end = Date.now();
+
+
+		var numFeature = g.features  ? g.features.length : 0;
+		var numOverlay = g.overlays ? g.overlays.length : 0;
+		var numPoint = 0, numLineString = 0, numPolygon = 0;
+		var numStyle = g.styles ? g.styles.length : 0;
+		var numNetworkLink = g.links ? g.links.length : 0;
+
+		if (g.features) {
+			for (var i = 0; i < g.features.length; i++) {
+				var f = g.features[i];
+				if (f.geometry) {
+					var type = f.geometry.type;
+					if (type == 'Point') numPoint++;
+					if (type == 'LineString') numLineString++;
+					if (type == 'Polygon') numPolygon++;
+				}
+			}
+		}
+
+		var time = (end - start);
+		ll.geoJSON = '/geo/data/' + id + '.geojson';
+		ll.kmlStats = JSON.stringify([ 
+			'OK', kmlSize, json.length,
+			numFeature, numPoint, numLineString, numPolygon, numOverlay,
+			numStyle, numNetworkLink,
+			time
+		]);
+	}
 
 	layerTags.push(ll);
 });

@@ -1826,8 +1826,8 @@ function newTagTree(param) {
 			useContextMenu: false,
 		    autoEscape: false,
 		    selectable: false,
-		    //slide: false,
-			autoOpen: false
+		    slide: false,
+			autoOpen: false			
 		});
 
 		//autoOpen seems broken in jqtree, so manually open the first level:
