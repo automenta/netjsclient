@@ -511,6 +511,9 @@ function netention(f) {
 	                
 	                t.properties = propertyIDs;
 		    }
+
+			if (t.icon)
+				defaultIcons[t.uri] = t.icon;
         },
         
         /*geolocate : function(ex) {

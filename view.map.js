@@ -238,8 +238,8 @@ function renderLeafletMap(s, o, v) {
 						});
 
 						if (feature.properties) {
-							var name = feature.properties.name;
-							if (name) {							
+							var name = feature.properties.name;							
+							if (name) {
 								m.on('mouseover', function(e) {
 									later(function() {
 										tooltip.css('left', e.originalEvent.clientX);
@@ -259,7 +259,35 @@ function renderLeafletMap(s, o, v) {
 
 						return m;
 					}
-				})
+				});
+
+				g.baseAdd = g.onAdd;
+				g.baseRemove = g.onRemove;
+				g.imageOverlays = [];
+
+				g.onAdd = function(map) {
+					var result = g.baseAdd(map);
+					if (x.overlays) {
+						for (var i = 0; i < x.overlays.length; i++) {
+							var O = x.overlays[i];
+							var iconurl = O.geometry.icon;
+							var latlonbox = O.geometry.latlonbox;  //n,e,s,w
+							var rotate = O.geometry.rotate;
+
+							var io = L.imageOverlay(iconurl, [ [ latlonbox[2], latlonbox[3] ], [ latlonbox[0], latlonbox[1] ] ]);
+							g.imageOverlays.push(io);
+							io.addTo(map);
+						}
+					}
+					return result;
+				};
+				g.onRemove = function(map) {
+					var result = g.baseRemove(map);
+					for (var i = 0; i < g.imageOverlays.length; i++)
+						map.removeLayer(g.imageOverlays[i]);
+					return result;
+				};
+
 				g.addTo(map);
 				onAdded(g);
 			});

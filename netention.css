@@ -642,6 +642,7 @@ body { width:100%; height:100%; margin:0px; padding:0px; overflow:hidden; font-f
 #FocusEdit button { font-size:.8em; }
 #FocusEdit .ObjectEditDiv .tagSection { float: none !important; }
 
+#FocusEditTree { clear: both; }
 
 #FocusMainMenu { clear:both; width:100%; margin:0px 0px 20px 0px; padding:0;  }
 #Focus { width: 98%; border:none; margin:20px 0px; }

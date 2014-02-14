@@ -17,13 +17,14 @@ function newFocusTagTree(currentFocus, onTagChanged) {
 				content += '<br/><ul class="smalltext">' + desc + '</ul>';
 
             return {
-                label: ('<input id="' + prefix + id + '" type="checkbox" class="FTT_TagChoice"/>' + content)
+                //label: ('<input id="' + prefix + id + '" type="checkbox" class="FTT_TagChoice"/>' + content)
+                label: ('<button id="' + prefix + id + '" class="FTT_TagChoice">+</button>' + content)
             };
         },
 		onCreated: function() {
 			e.find('.FTT_TagChoice').each(function(x) {
 				var t = $(this);
-				t.change(function() {
+				t.click(function() {
 					var tag = t.attr('id').substring(prefix.length);
 
 					function strength(v) {
@@ -33,15 +34,15 @@ function newFocusTagTree(currentFocus, onTagChanged) {
 						});
 					}
 
-					if (t.is(':checked')) {
+					//if (t.is(':checked')) {
 						var defaultStrength = 1.0;
 						var T = $N.getTag(tag);
 						if (T.defaultStrength) defaultStrength = T.defaultStrength;
 						strength(defaultStrength);
-					}
+					/*}
 					else {
 						strength(0);
-					}
+					}*/
 
 				   //onTagAdded();
 				});

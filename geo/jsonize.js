@@ -33,10 +33,11 @@ var layerTags = [];
 	lat/lon bounds?
 */
 
-var maxKMLSize = 991500000;
+var maxKMLSize = 1500000;
 
-function kml2geojson(k) {
+function kml2geojson(layerid, k) {
 	var f = [];
+	var overlays = [];
 
 	function spaces(d) {
 		var x = '';
@@ -76,6 +77,10 @@ function kml2geojson(k) {
 		var p = { };
 
 		if (x.NAME) p.name = x.NAME;
+		//TODO find what is generating this and fix it
+		if (Array.isArray(p.name))
+			p.name = p.name[0];
+
 		if (x.DESCRIPTION) p.description = x.DESCRIPTION;
 
 
@@ -230,7 +235,84 @@ function kml2geojson(k) {
 
 	}
 	function addOverlay(x) {
-		//console.log('OVERLAY', x);
+
+		/*
+		 { NAME: [ '1990' ],
+		  VISIBILITY: [ '1' ],
+		  LOOKAT: 
+		   [ { LONGITUDE: [Object],
+			   LATITUDE: [Object],
+			   ALTITUDE: [Object],
+			   RANGE: [Object],
+			   TILT: [Object],
+			   HEADING: [Object],
+			   ALTITUDEMODE: [Object] } ],
+		  TIMESPAN: [ { BEGIN: [Object], END: [Object] } ],
+		  DRAWORDER: [ '1990' ],
+		  ICON: [ { HREF: [Object] } ],
+		  LATLONBOX: 
+		   [ { NORTH: [Object],
+			   SOUTH: [Object],
+			   EAST: [Object],
+			   WEST: [Object] } ] }
+
+		<LatLonBox>
+			Specifies where the top, bottom, right, and left sides of a bounding box for the ground overlay are aligned.
+			<north> Specifies the latitude of the north edge of the bounding box, in decimal degrees from 0 to ±90.
+			<south> Specifies the latitude of the south edge of the bounding box, in decimal degrees from 0 to ±90.
+			<east> Specifies the longitude of the east edge of the bounding box, in decimal degrees from 0 to ±180. (For overlays that overlap the meridian of 180° longitude, values can extend beyond that range.)
+			<west> Specifies the longitude of the west edge of the bounding box, in decimal degrees from 0 to ±180. (For overlays that overlap the meridian of 180° longitude, values can extend beyond that range.)
+			<rotation> Specifies a rotation of the overlay about its center, in degrees. Values can be ±180. The default is 0 (north). Rotations are specified in a counterclockwise direction.
+
+		<Icon>
+			  <href>http://www.google.com/intl/en/images/logo.gif</href>
+			  <refreshMode>onInterval</refreshMode>
+			  <refreshInterval>86400</refreshInterval>
+			  <viewBoundScale>0.75</viewBoundScale>
+	   </Icon>
+		*/
+		var p = {
+
+		};
+		if (x.NAME) p.name = x.NAME[0];
+		if (x.DRAWORDER) p.drawOrder = parseInt(x.DRAWORDER[0]);
+		
+	
+		if ((x.ICON) && (x.LATLONBOX)) {
+			var i = x.ICON[0].HREF[0];
+	
+			//if URL is relative, it refers to a file that was originally in the .KMZ file
+			if (i.indexOf('http://')!=0) {
+				//remove folders leading up to the file, TODO use a safer method in case same filenames are used in subdirectories
+				var lastSlash = i.lastIndexOf('/');
+				if (lastSlash!=-1) {
+					i = i.substring(lastSlash+1, i.length);
+				}
+
+				//prepend path to the relative cache
+				i = "/geo/cache/" + layerid + "/" + i;
+			}
+
+
+			var B = x.LATLONBOX[0];
+			var b = [ parseFloat(B.NORTH[0]), parseFloat(B.EAST[0]), parseFloat(B.SOUTH[0]), parseFloat(B.WEST[0]) ];
+			 
+			var ff = {
+		        type: 'Feature',
+		        geometry: {
+					type: 'GroundOverlay',
+					latlonbox: b,				
+					icon: i
+				},
+		        properties: p
+		    };
+			
+			if (B.ROTATION)
+				ff.geometry.rotate = parseFloat(B.ROTATION[0]);
+
+			//console.error('OVERLAY', i, b, ff.geometry.rotate);
+			overlays.push(ff);
+		}
 	}
 
 	function addFeatures(node, depth) {
@@ -240,7 +322,7 @@ function kml2geojson(k) {
 
 		var overlays = node.GROUNDOVERLAY;
 		if (overlays) {
-			console.error('Overlays: ' + overlays.length);
+			//console.error('Overlays: ' + overlays.length);
 			for (var i = 0; i < overlays.length; i++) {
 				addOverlay(overlays[i]);
 			}
@@ -274,14 +356,17 @@ function kml2geojson(k) {
 		}
 	}
 
+	if (!k.KML.DOCUMENT) return;
+
+	addFeatures(k.KML.DOCUMENT[0],0);
+
 	var g = {
 		"type": "FeatureCollection",
 		"features": f
 	};
 
-	if (!k.KML.DOCUMENT) return;
-
-	addFeatures(k.KML.DOCUMENT[0],0);
+	if (overlays.length > 0)
+		g.overlays = overlays;
 
 	return g;
 }
@@ -297,32 +382,28 @@ layerTags.push([
 
 _.each(layers, function(L) {
 	if (L.section) {
-		layerTags.push({
-			uri: L.section,
-			name: L.section
-		});
-		return;
+		L.layer = L.section;
 	}
-
 
 	var id = L.layer;
 	if (!id) return;
 
-	var name = L.name;
+	var name = L.name || id;
 
 	var ll = {
 		uri: id,
 		name: name,
 		description: (L.source || '')
 	};
-	if (L.tag)
-		ll.tag = L.tag;
-
-	if (L.defaultStrength)
-		ll.defaultStrength = L.defaultStrength;
+	if (L.tag) ll.tag = L.tag;
+	if (L.icon) ll.icon = L.icon;
+	if (L.defaultStrength)	ll.defaultStrength = L.defaultStrength;
 
 	if (L.tileLayer) {
 		ll.tileLayer = L.tileLayer;
+	}
+	else if (L.section) {
+
 	}
 	else if (L.kml) {
 		var kmlurl = L.kml;
@@ -365,35 +446,37 @@ _.each(layers, function(L) {
 
 		ll.geoJSON = '/geo/data/' + id + '.geojson';
 
-		parser.parseString(r, function (err, result) {
-			if (err) {
-				console.error(id,err);
-			}
-			if (result) {
-				var g = kml2geojson(result);
-				fs.writeFileSync('data/' + id + '.geojson', JSON.stringify(g));
-			}
-	
-			/*
-			var numFeature = g.features  ? g.features.length : 0;
-			var numOverlay = g.overlays ? g.overlays.length : 0;
-			var numPoint = 0, numLineString = 0, numPolygon = 0;
-			var numStyle = g.styles ? g.styles.length : 0;
-			var numNetworkLink = g.links ? g.links.length : 0;
-
-			if (g.features) {
-				for (var i = 0; i < g.features.length; i++) {
-					var f = g.features[i];
-					if (f.geometry) {
-						var type = f.geometry.type;
-						if (type == 'Point') numPoint++;
-						if (type == 'LineString') numLineString++;
-						if (type == 'Polygon') numPolygon++;
-					}
+		(function (layerid){
+			parser.parseString(r, function (err, result) {
+				if (err) {
+					console.error(id,err);
 				}
-			}*/
+				if (result) {
+					var g = kml2geojson(layerid, result);
+					fs.writeFileSync('data/' + id + '.geojson', JSON.stringify(g));
+				}
+	
+				/*
+				var numFeature = g.features  ? g.features.length : 0;
+				var numOverlay = g.overlays ? g.overlays.length : 0;
+				var numPoint = 0, numLineString = 0, numPolygon = 0;
+				var numStyle = g.styles ? g.styles.length : 0;
+				var numNetworkLink = g.links ? g.links.length : 0;
 
-		});
+				if (g.features) {
+					for (var i = 0; i < g.features.length; i++) {
+						var f = g.features[i];
+						if (f.geometry) {
+							var type = f.geometry.type;
+							if (type == 'Point') numPoint++;
+							if (type == 'LineString') numLineString++;
+							if (type == 'Polygon') numPolygon++;
+						}
+					}
+				}*/
+
+			});
+		})(id);
 
 		layerTags.push(ll);
 	}
