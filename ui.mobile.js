@@ -109,7 +109,10 @@ function renderFocus() {
     $N.setFocus(focusValue);
 
     var fe = $('#FocusEdit');
-    fe.empty();
+    var fev = $('#FocusEditValues');
+    var fet = $('#FocusEditTree');
+
+    fev.empty();
 
 	var newFocusValue = _.clone(focusValue);
 
@@ -121,27 +124,49 @@ function renderFocus() {
         $N.setFocus(x);
     }, [ 'spacepoint' ]); //do not show spacepoint property, custom renderer is below
 
-    fe.append(noe);
+    fev.append(noe);
+
+	
+	/*var ylayout() {		
+		var marginpx = 10;
+		var remainingHeight = $(document).height() - fe.offset().top - marginpx;
+		var mh = 'max-height: ' + (remainingHeight/2) + 'px !important';
+		fev.attr('style', mh );
+		fet.attr('style', mh );
+	}*/
+	fe.css('max-height', ($(document).height() - fe.offset().top) + 'px');
+
+
+//			tt.attr('style', 'max-height: ' + Math.floor($(window).height()*0.6) + 'px !important' );
 
 
 	if ((configuration.avatarMenuTagTreeAlways) || (focusValue.what)) {
-		var tt = newFocusTagTree(focusValue, function(tag, newStrength) {
+		if (fet.children().length == 0) {
+			var tt = newFocusTagTree(focusValue, function(tag, newStrength) {
 
-			var tags = objTags(focusValue);
-			var existingIndex = _.indexOf(tags, tag);
+				var tags = objTags(focusValue);
+				var existingIndex = _.indexOf(tags, tag);
 
-			if (existingIndex!=-1)
-				objRemoveValue(focusValue, existingIndex);
+				if (existingIndex!=-1)
+					objRemoveValue(focusValue, existingIndex);
 
-			if (newStrength > 0) {
-		        objAddTag(focusValue, tag, newStrength);
-			}
+				if (newStrength > 0) {
+				    objAddTag(focusValue, tag, newStrength);
+				}
 
-			renderFocus();
-		});
-		tt.attr('style', 'height: ' + Math.floor($(window).height()*0.6) + 'px !important' );
-		fe.append(tt);
+				renderFocus();
+			});
+			fet.append(tt);
+			//ylayout();
+		}
 	}
+	else {
+	}
+
+	//TODO attach resize handler 
+	//ylayout();
+
+
     if (focusValue.when) {
     }
 

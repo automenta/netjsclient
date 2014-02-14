@@ -632,11 +632,11 @@ function newTagSection(x, index, t, editable, whenSaved, onAdd, onRemove, onStre
     var strength = t.strength;
 
     var d = newDiv().addClass('tagSection');
-    d.hover( function() {
+    /*d.hover( function() {
         d.addClass('tagSectionHovered');
     }, function() {
         d.removeClass('tagSectionHovered');
-    } );
+    } );*/
 
     if (strength == undefined)
         strength = 1.0;

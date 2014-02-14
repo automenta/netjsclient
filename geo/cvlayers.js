@@ -2,10 +2,26 @@ exports.layers = [
 	"Alerts",
 	{section:"Weather",icon:"http://climateviewer.com/gallery/nws_google.gif"},
 
+		//http://openweathermap.org/hugemaps
+
 		{layer:'owm-clouds',tileLayer:'http://{s}.tile.openweathermap.org/map/clouds/{z}/{x}/{y}.png',
 			defaultStrength:0.5, source:"OpenWeatherMap.org", sourceURL:'http://openweathermap.org',name:"Clouds", tag:['Weather']},
-		{layer:'owm-precipitation',tileLayer:'http://{s}.tile.openweathermap.org/map/precipitation_cls/{z}/{x}/{y}.png',
+		{layer:'owm-precipitation',tileLayer:'http://{s}.tile.openweathermap.org/map/precipitation/{z}/{x}/{y}.png',
 			defaultStrength:0.5, source:"OpenWeatherMap.org", sourceURL:'http://openweathermap.org',name:"Precipitation", tag:['Weather']},
+		{layer:'owm-rain',tileLayer:'http://{s}.tile.openweathermap.org/map/rain/{z}/{x}/{y}.png',
+			defaultStrength:0.5, source:"OpenWeatherMap.org", sourceURL:'http://openweathermap.org',name:"Rain", tag:['Weather']},
+		{layer:'owm-pressure',tileLayer:'http://{s}.tile.openweathermap.org/map/pressure/{z}/{x}/{y}.png',
+			defaultStrength:0.5, source:"OpenWeatherMap.org", sourceURL:'http://openweathermap.org',name:"Pressure", tag:['Weather']},
+		{layer:'owm-pressure_cntr',tileLayer:'http://{s}.tile.openweathermap.org/map/pressure_cntr/{z}/{x}/{y}.png',
+			defaultStrength:0.5, source:"OpenWeatherMap.org", sourceURL:'http://openweathermap.org',name:"Pressure Contour", tag:['Weather']},
+		{layer:'owm-wind',tileLayer:'http://{s}.tile.openweathermap.org/map/wind/{z}/{x}/{y}.png',
+			defaultStrength:0.5, source:"OpenWeatherMap.org", sourceURL:'http://openweathermap.org',name:"Wind", tag:['Weather']},
+		{layer:'owm-temp',tileLayer:'http://{s}.tile.openweathermap.org/map/temp/{z}/{x}/{y}.png',
+			defaultStrength:0.5, source:"OpenWeatherMap.org", sourceURL:'http://openweathermap.org',name:"Temperature", tag:['Weather']},
+		{layer:'owm-snow',tileLayer:'http://{s}.tile.openweathermap.org/map/snow/{z}/{x}/{y}.png',
+			defaultStrength:0.5, source:"OpenWeatherMap.org", sourceURL:'http://openweathermap.org',name:"Snow", tag:['Weather']},
+
+		//City & Station data: https://github.com/buche/leaflet-openweathermap
 
 		{layer:'kml-nwswarn',kml:'http://wdssii.nssl.noaa.gov/realtime/nws_warnings.kmz',source:"NOAA National Severe Storms Laboratory, Warning Decision Support System - Integrated Information (WDSS-II)",sourceURL:'http://wdssii.nssl.noaa.gov/',name:"Current Warnings", tag:['Weather']},
 		{layer:"kml-nwshlog",kml:"http://wdssii.nssl.noaa.gov/geotiff/kml/NwsHourlyStormLogs.kml",source:"NOAA National Severe Storms Laboratory, Warning Decision Support System - Integrated Information (WDSS-II)",sourceURL:"http://wdssii.nssl.noaa.gov/",name:"Hourly Storm Log", tag:['Weather']},

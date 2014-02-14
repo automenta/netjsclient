@@ -291,7 +291,7 @@ function renderLeafletMap(s, o, v) {
 	function updateMap() {
 		var newLayersArray = $N.get('focus').value;
 
-		if (!newLayersArray) return;
+		if (!newLayersArray) newLayersArray = [ ];
 
 		var newlayers = { };
 
