@@ -51,7 +51,9 @@ function newPopupObjectViews(objectIDs) {
 		return newPopupObjectView(objectIDs[0]);
 
 	var objects = objectIDs.map(function(i) {
-		return $N.getObject(i);
+		if (typeof i == "string")
+			return $N.getObject(i);
+		return i;
 	});
 
     var d = newPopup(objects.length + " Objects");

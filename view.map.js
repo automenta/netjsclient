@@ -205,7 +205,25 @@ function renderLeafletMap(s, o, v) {
 
 		//https://github.com/openplans/Leaflet.FeatureSelect/blob/gh-pages/js/feature-select.js
 		featureSelect.checkIntersections(e.containerPoint, p, _.values(map.layers), function(s) {
-			console.log(e, 'intersect', s);
+			if (s.length == 0) return;
+
+			var nobs = s.map(function(g) {
+				if (!g.feature) return;
+
+				var x = objNew();
+				x.setName('point');
+
+				var p = g.feature.properties;
+				if (p) {
+					x.setName(p.name);
+					delete p.name;
+					x.addDescription(JSON.stringify(p, null, 4));
+				}
+				return x;
+			});
+
+			newPopupObjectViews(nobs);
+
 		} );
 
 	});
