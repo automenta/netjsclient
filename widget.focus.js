@@ -3,49 +3,52 @@ function newFocusTagTree(currentFocus, onTagChanged) {
     var e = newDiv('FocusTagTree');
     
 	var prefix = 'FTT_';
+
+	function strength(tag, v) {
+		later(function() {
+			if (onTagChanged)
+				onTagChanged(tag, v);
+		});
+	}
+	function clickFunction() {
+		var tag = $(this).attr('id').substring(prefix.length);
+		var T = $N.getTag(tag);
+
+
+		var defaultStrength = 1.0;
+		if (T.defaultStrength) defaultStrength = T.defaultStrength;
+		strength(tag, defaultStrength);
+	}
     
     var p = {
         target: e,
-        newTagDiv: function(id, content) {
+        newTagDiv: function(id, content, T) {
             var ti = getTagIcon(id);
-			var T = $N.getTag(id);
 			var desc = T.description;
+
+			if (desc)
+				content += '<br/><ul>' + desc.substring(0,100) + '</ul>';
+
+
+			var strength = T.strength!=undefined ? T.strength : 1.0;
+			strength = 0.5 + (strength/2.0);
+			if (fs!=1.0) {
+				var fs = strength * 100.0;
+				content = '<span style="font-size: ' + fs + '%">' + content + '</span>';
+			}
 
             if (ti)
                 content = '<img style="height: 1em" src="' + ti + '"/>' + content;
-			if (desc)
-				content += '<br/><ul class="smalltext">' + desc + '</ul>';
 
             return {
                 //label: ('<input id="' + prefix + id + '" type="checkbox" class="FTT_TagChoice"/>' + content)
-                label: ('<button id="' + prefix + id + '" class="FTT_TagChoice">+</button>' + content)
+                label: ('<button id="' + prefix + id + '" class="FTTB">+</button>' + content)
             };
         },
 		onCreated: function() {
-			e.find('.FTT_TagChoice').each(function(x) {
+			e.find('.FTTB').each(function(x) {
 				var t = $(this);
-				t.click(function() {
-					var tag = t.attr('id').substring(prefix.length);
-
-					function strength(v) {
-						later(function() {
-							if (onTagChanged)
-								onTagChanged(tag, v);
-						});
-					}
-
-					//if (t.is(':checked')) {
-						var defaultStrength = 1.0;
-						var T = $N.getTag(tag);
-						if (T.defaultStrength) defaultStrength = T.defaultStrength;
-						strength(defaultStrength);
-					/*}
-					else {
-						strength(0);
-					}*/
-
-				   //onTagAdded();
-				});
+				t.click(clickFunction);
 			});
 		}
     };

@@ -190,10 +190,26 @@ function renderLeafletMap(s, o, v) {
 
 	var testIcon = L.icon({
 		iconUrl: 'icon/emoticon/happy.svg',
-		iconSize: [32, 37],
-		iconAnchor: [16, 37],
+		iconSize: [32, 32],
+		iconAnchor: [16, 16],
 		popupAnchor: [0, -28]
 	});
+
+	var featureSelect = L.featureSelect();
+	featureSelect.addTo(map);
+
+	map.layers = { };
+
+	map.on('click', function(e) {
+		var p = e.latlng;
+
+		//https://github.com/openplans/Leaflet.FeatureSelect/blob/gh-pages/js/feature-select.js
+		featureSelect.checkIntersections(e.containerPoint, p, _.values(map.layers), function(s) {
+			console.log(e, 'intersect', s);
+		} );
+
+	});
+
 
 	function onEachFeature(feature, layer) {
 		var popupContent = "";
@@ -205,23 +221,25 @@ function renderLeafletMap(s, o, v) {
 			popupContent = '<b>' + name + '</b><br/>' + desc;
 		}
 
-		layer.bindPopup(popupContent);
+		//layer.bindPopup(popupContent);
 	}
 
-	map.layers = { };
 
 	function addLayer(tag, strength, onAdded) {
 		var T = $N.getTag(tag);
 
 		if (T.geoJSON) {
 			$.getJSON(T.geoJSON, function(x) {
+
+				T.geoJSONdata = x; //cache it there
+
 				var g = L.geoJson(x, {
 
 					/*style: function (feature) {
 						return feature.properties && feature.properties.style;
 					},*/
 
-					onEachFeature: onEachFeature,
+					//onEachFeature: onEachFeature,
 
 					pointToLayer: function (feature, latlng) {
 						/*var m = L.circleMarker(latlng, {
@@ -234,7 +252,8 @@ function renderLeafletMap(s, o, v) {
 						});*/
 
 						var m = L.marker(latlng, {
-							icon: testIcon
+							icon: testIcon,
+							clickable: false
 						});
 
 						if (feature.properties) {
@@ -301,6 +320,12 @@ function renderLeafletMap(s, o, v) {
 			tl.setOpacity(strength);
 			tl.addTo(map);
 			onAdded(tl);
+		}
+		else if (T.dbpediaLayer) {
+			//https://github.com/kr1/Leaflet.dbpediaLayer/
+			var lay = L.dbPediaLayer({lang: 'en', includeCities: true})
+			lay.addTo(map);
+			onAdded(lay);
 		}
 		else {
 		}
@@ -727,3 +752,215 @@ this, this.eventMethods, this.handlerOptions
 CLASS_NAME: "OpenLayers.Control.Click"
 
 });
+
+
+
+L.FeatureSelect = L.Class.extend({
+  includes: L.Mixin.Events,
+
+  options: {
+    icon: L.divIcon({
+      iconSize: [16, 16],
+      iconAnchor: [8, 8],
+      className: 'leaflet-feature-selector'
+    }),
+    selectSize: [16, 16],
+    featureGroup: null
+  },
+
+  initialize: function (options) {
+    L.setOptions(this, options);
+
+    this.options.selectSize = L.point(this.options.selectSize);
+  },
+
+  addTo: function (map) {
+    this._map = map;
+    this._center = map.getCenter();
+
+    this.layers = {};
+
+    /*this._marker = L.marker(this._center, {
+      icon: this.options.icon,
+      clickable: false,
+      zIndexOffset: 1000
+    }).addTo(map);
+
+    map.on('move', this._checkIntersections, this);*/
+
+	/*
+    this.options.featureGroup.on('layeradd', function(evt) {
+      this._checkIntersections();
+    }, this);
+    this.options.featureGroup.on('layerremove', function(evt) {
+      this._handleNoIntersection(evt.layer);
+      this._checkIntersections();
+    }, this);
+	*/
+
+    return this;
+  },
+	/*
+  _handleIntersection: function(layer) {
+    if (!this.layers[L.stamp(layer)]) {
+      this.layers[L.stamp(layer)] = layer;
+
+      this.justSelected.push(layer);
+    }
+  },
+
+  _handleNoIntersection: function(layer) {
+    if (this.layers[L.stamp(layer)]) {
+      delete this.layers[L.stamp(layer)];
+      this.justUnselected.push(layer);
+    }
+  },
+	*/
+  checkIntersections: function(epoint, point, layers, withSelected) {
+    var selectBounds, selectBoundsCoords;
+
+    this.justSelected = [];
+    this.justUnselected  = [];
+
+    var deltaBounds = L.latLngBounds(
+      this._map.unproject([
+        epoint.x + this.options.selectSize.x/2,
+        epoint.y - this.options.selectSize.y/2
+      ]),
+      this._map.unproject([
+        epoint.x - this.options.selectSize.x/2,
+        epoint.y + this.options.selectSize.y/2
+      ])
+    );
+	var dl = Math.max( Math.abs(deltaBounds.getWest() - deltaBounds.getEast()), Math.abs(deltaBounds.getNorth() - deltaBounds.getSouth()) );
+
+	var southWest = L.latLng(point.lat-dl, point.lng-dl),
+    	northEast = L.latLng(point.lat+dl, point.lng+dl);
+    selectBounds = L.latLngBounds(southWest, northEast);
+
+
+    selectBoundsCoords = L.rectangle(selectBounds).toGeoJSON().geometry.coordinates[0];
+
+	var selected = [];
+	for (var jj = 0; jj < layers.length; jj++) {
+		var layerg = layers[jj];
+		if (!layerg.getLayers) continue;
+
+		var layergs = layerg.getLayers();
+		for (var j = 0; j < layergs.length; j++) {
+			var layer = layergs[j];
+
+			  var coords = layer.feature.geometry.coordinates,
+				  len, i, intersects = false;
+
+			  switch (layer.feature.geometry.type) {
+				case 'Point':
+				  coords = [ coords ];
+				  // fall through
+				case 'MultiPoint':
+				  for (i=0; i<coords.length; i++) {
+				    if (selectBounds.contains([coords[i][1], coords[i][0]]))  {
+				    //if (selectBounds.contains(L.latLng([coords[i][1], coords[i][0]])))  {
+				      intersects = true;
+				    }
+				  }
+				  break;
+
+				case 'LineString':
+				  coords = [ coords ];
+				  // fall through
+				case 'MultiLineString':
+				  for (i=0; i<coords.length; i++) {
+				    if (selectBounds.intersects(layer.getBounds()) && this._lineStringsIntersect(selectBoundsCoords, coords[i])) {
+				      intersects = true;
+				    }
+				  }
+				  break;
+
+				case 'Polygon':
+				  coords = [ coords ];
+				  // fall through
+				case 'MultiPolygon':
+				  for (i=0; i<coords.length; i++) {
+				    if (selectBounds.intersects(layer.getBounds()) && this._pointInPolygon(this._center.lng, this._center.lat, coords[i][0])) {
+				      intersects = true;
+				    }
+				  }
+				  break;
+
+			  }
+
+			  if (intersects) {
+				//this._handleIntersection(layer);
+				selected.push(layer);
+			  } //else {		//this._handleNoIntersection(layer);			  }
+
+		}
+
+    }
+
+	withSelected(selected);
+
+	/*
+	if (this.justSelected.length) {
+      this.fire('select', {
+        layers: this.justSelected
+      });
+    }
+
+    if (this.justUnselected.length) {
+      this.fire('unselect', {
+        layers: this.justUnselected
+      });
+    }*/
+  },
+
+  // adapted from https://github.com/maxogden/geojson-js-utils/
+  _lineStringsIntersect: function (c1, c2) {
+    for (var i = 0; i <= c1.length - 2; ++i) {
+      for (var j = 0; j <= c2.length - 2; ++j) {
+        var a1 = {x: c1[i][1], y: c1[i][0] },
+          a2 = {x: c1[i + 1][1], y: c1[i + 1][0] },
+          b1 = {x: c2[j][1], y: c2[j][0] },
+          b2 = {x: c2[j + 1][1], y: c2[j + 1][0] },
+
+          ua_t = (b2.x - b1.x) * (a1.y - b1.y) - (b2.y - b1.y) * (a1.x - b1.x),
+          ub_t = (a2.x - a1.x) * (a1.y - b1.y) - (a2.y - a1.y) * (a1.x - b1.x),
+          u_b = (b2.y - b1.y) * (a2.x - a1.x) - (b2.x - b1.x) * (a2.y - a1.y);
+
+        if (u_b !== 0) {
+          var ua = ua_t / u_b,
+            ub = ub_t / u_b;
+          if (0 <= ua && ua <= 1 && 0 <= ub && ub <= 1) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  },
+
+  // Adapted from http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html#Listing the Vertices
+  _pointInPolygon: function(x, y, polyCoords) {
+    var inside = false,
+        intersects, i, j;
+
+    for (i = 0, j = polyCoords.length - 1; i < polyCoords.length; j = i++) {
+      var xi = polyCoords[i][0], yi = polyCoords[i][1];
+      var xj = polyCoords[j][0], yj = polyCoords[j][1];
+
+      intersects = ((yi > y) !== (yj > y)) &&
+                       (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+      if (intersects) {
+        inside = !inside;
+      }
+    }
+
+    return inside;
+  }
+});
+
+L.featureSelect = function (options) {
+  return new L.FeatureSelect(options);
+};

@@ -1774,7 +1774,7 @@ function newTagTree(param) {
              return;*/
         }
 
-        var b = newTagLayerDiv(xi, label);
+        var b = newTagLayerDiv(xi, label, i);
 
         if (children.length > 0) {
             b.children = [];

@@ -45,7 +45,7 @@ var dependentKML = [];
 */
 
 //var maxKMLSize = 500000;
-var maxKMLSize = 11000000;
+var maxKMLSize = 1000000;
 
 function kml2geojson(layerid, k) {
 	var f = [];
@@ -374,20 +374,23 @@ function kml2geojson(layerid, k) {
 				var url = N.URL ? N.URL : N.LINK;
 				if (url)
 					url = url[0].HREF[0];
-
+				
 				if (!url) continue;
 
 				var folderID = i;
 				var folderName = N.NAME ? N.NAME[0] : ('#' + i);
+
+				//TODO get folder description?
+
 				var folderURI = layerid + "_" + folderID;
 
 				var ll = {
 					uri: folderURI,
 					kmlURL: url,
 					name: folderName,
-					description: url,
 					geoJSON: '/geo/data/' + folderURI + '.geojson',
-					tag: [ layerid ]
+					tag: [ layerid ],
+					strength: 0.75
 				};
 				layerTags.push(ll);
 
@@ -412,7 +415,8 @@ function kml2geojson(layerid, k) {
 					uri: folderURI,
 					name: folderName,
 					geoJSON: '/geo/data/' + folderURI + '.geojson',
-					tag: [ layerid ]
+					tag: [ layerid ],
+					strength: 0.75
 				};
 				layerTags.push(ll);
 
@@ -492,6 +496,10 @@ for (var i = 0; i < layers.length; i++) {
 		ll.tileLayer = L.tileLayer;
 		layerTags.push(ll);
 	}
+	else if (L.dbpediaLayer) {
+		ll.dbpediaLayer = L.dbpediaLayer;
+		layerTags.push(ll);
+	}	
 	else if (L.section) {
 		layerTags.push(ll);
 	}
@@ -510,7 +518,8 @@ for (var i = 0; i < layers.length; i++) {
 			var ll = {
 				uri: id,
 				name: name,
-				description: 'Not Available'
+				description: 'Not Available',
+				strength: 0.5
 			};
 			if (L.tag)
 				ll.tag = L.tag;
@@ -525,7 +534,8 @@ for (var i = 0; i < layers.length; i++) {
 			var ll = {
 				uri: id,
 				name: name,
-				description: 'Not Available'
+				description: 'Not Available',
+				strength: 0.5
 			};
 			if (L.tag)
 				ll.tag = L.tag;
