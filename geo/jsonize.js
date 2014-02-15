@@ -1,14 +1,25 @@
-var togeojson = require('./togeojson.js');
 var layers = require('./cvlayers.js').layers;
 var _ = require('underscore');
 var exec = require('child_process').exec;
 var fs = require('fs');
-var jsdom = require('jsdom').jsdom;
+
 var xml2js = require('xml2js');
 var parser = new xml2js.Parser({strict:false});
 
+var minifier = require('html-minifier');
+
+//https://github.com/inh3/nPool
+
+//var JSONH = require('../lib/jsonh/jsonh.js');
+//var BSON = require('bson').pure().BSON;
+var RJSON = require('rjson');
+
+var Join = require('join').Join,
+  join = Join.create();
 
 var layerTags = [];
+var dependentKML = [];
+
 /*
 	(for CSV output:)
 
@@ -33,7 +44,8 @@ var layerTags = [];
 	lat/lon bounds?
 */
 
-var maxKMLSize = 1500000;
+//var maxKMLSize = 500000;
+var maxKMLSize = 11000000;
 
 function kml2geojson(layerid, k) {
 	var f = [];
@@ -224,6 +236,17 @@ function kml2geojson(layerid, k) {
 		if (_.keys(x).length > 0)
 			console.error('PLACEMARK', x);
 
+		
+		if (p.description) {
+			if (Array.isArray(p.description))
+				p.description = p.description[0];
+
+			try {
+				p.description = minifier.minify(p.description, { removeComments: true });
+			}
+			catch (e) { }
+		}
+
 		f.push({
             type: 'Feature',
             geometry: (geoms.length === 1) ? geoms[0] : {
@@ -283,7 +306,7 @@ function kml2geojson(layerid, k) {
 	
 			//if URL is relative, it refers to a file that was originally in the .KMZ file
 			if (i.indexOf('http://')!=0) {
-				//remove folders leading up to the file, TODO use a safer method in case same filenames are used in subdirectories
+				//remove directories leading up to the file, TODO use a safer method in case same filenames are used in subdirectories
 				var lastSlash = i.lastIndexOf('/');
 				if (lastSlash!=-1) {
 					i = i.substring(lastSlash+1, i.length);
@@ -315,7 +338,7 @@ function kml2geojson(layerid, k) {
 		}
 	}
 
-	function addFeatures(node, depth) {
+	function addFeatures(node) {
 		if (!node) return;
 
 		//console.log(node);
@@ -343,7 +366,36 @@ function kml2geojson(layerid, k) {
 
 		var networklinks = node.NETWORKLINK;
 		if (networklinks) {
-			console.error('  NetworkLinks: ' + networklinks.length);
+			//console.error('  NetworkLinks: ' + networklinks.length);
+			for (var i = 0; i < networklinks.length; i++) {
+				var N = networklinks[i];
+
+
+				var url = N.URL ? N.URL : N.LINK;
+				if (url)
+					url = url[0].HREF[0];
+
+				if (!url) continue;
+
+				var folderID = i;
+				var folderName = N.NAME ? N.NAME[0] : ('#' + i);
+				var folderURI = layerid + "_" + folderID;
+
+				var ll = {
+					uri: folderURI,
+					kmlURL: url,
+					name: folderName,
+					description: url,
+					geoJSON: '/geo/data/' + folderURI + '.geojson',
+					tag: [ layerid ]
+				};
+				layerTags.push(ll);
+
+				dependentKML.push(ll);
+
+				//kml2geojson(folderURI, folders[i]);
+			}
+
 		}
 
 		var folders = node.FOLDER;
@@ -351,14 +403,29 @@ function kml2geojson(layerid, k) {
 			//console.log(spaces(2+2*depth) + '  Folders: ' + folders.length);
 
 			for (var i = 0; i < folders.length; i++) {
-				addFeatures(folders[i], depth+1);
+				var F = folders[i];
+				var folderID = i;
+				var folderName = F.NAME ? F.NAME[0] : ('#' + i);
+				var folderURI = layerid + "." + folderID;
+
+				var ll = {
+					uri: folderURI,
+					name: folderName,
+					geoJSON: '/geo/data/' + folderURI + '.geojson',
+					tag: [ layerid ]
+				};
+				layerTags.push(ll);
+
+				kml2geojson(folderURI, folders[i]);
 			}
 		}
 	}
 
-	if (!k.KML.DOCUMENT) return;
-
-	addFeatures(k.KML.DOCUMENT[0],0);
+	
+	if ((!k.KML) || (!k.KML.DOCUMENT))
+		addFeatures(k);
+	else
+		addFeatures(k.KML.DOCUMENT[0]);
 
 	var g = {
 		"type": "FeatureCollection",
@@ -367,6 +434,17 @@ function kml2geojson(layerid, k) {
 
 	if (overlays.length > 0)
 		g.overlays = overlays;
+
+
+	var stringified = JSON.stringify(g);
+
+	//var packed = BSON.serialize(g);
+	//var packed = JSON.stringify(RJSON.pack(g));
+
+	//console.log('  kml',kmlSize,'json',stringified.length,'rjson',packed.length);
+	fs.writeFileSync('data/' + layerid + '.geojson', stringified);
+	//fs.writeFileSync('data/' + id + '.rgeojson', packed);
+
 
 	return g;
 }
@@ -379,14 +457,25 @@ layerTags.push([
 	'timeMS'
 ]);
 */
+/*
+join.notify(function (i, args) {
+  console.log(
+    'Callback #' + (i + 1) 
+  + ' of ' + join.length 
+  + ' completed', args
+  );
+});
+*/
 
-_.each(layers, function(L) {
+for (var i = 0; i < layers.length; i++) {
+	var L = layers[i];
+
 	if (L.section) {
 		L.layer = L.section;
 	}
 
 	var id = L.layer;
-	if (!id) return;
+	if (!id) continue;
 
 	var name = L.name || id;
 
@@ -401,13 +490,14 @@ _.each(layers, function(L) {
 
 	if (L.tileLayer) {
 		ll.tileLayer = L.tileLayer;
+		layerTags.push(ll);
 	}
 	else if (L.section) {
-
+		layerTags.push(ll);
 	}
 	else if (L.kml) {
 		var kmlurl = L.kml;
-		if (kmlurl.indexOf('http://')!=0) return;
+		if (kmlurl.indexOf('http://')!=0) continue;
 
 		var filename = 'cache/' + id + '.kml';
 		var r;
@@ -425,12 +515,13 @@ _.each(layers, function(L) {
 			if (L.tag)
 				ll.tag = L.tag;
 			layerTags.push(ll);
-			return; 
+			continue; 
 		}
 
 		var kmlSize = r.length;
 
 		if (kmlSize > maxKMLSize) {
+			console.error('Too large', id, name);
 			var ll = {
 				uri: id,
 				name: name,
@@ -439,23 +530,33 @@ _.each(layers, function(L) {
 			if (L.tag)
 				ll.tag = L.tag;
 			layerTags.push(ll);
-			return;
+			continue;
 		}
 
 		//console.log('Converting ' + id);
 
+		console.error('Converting', id, name);
 		ll.geoJSON = '/geo/data/' + id + '.geojson';
 
+		layerTags.push(ll);
+
+		var finished = join.add();
 		(function (layerid){
+
 			parser.parseString(r, function (err, result) {
 				if (err) {
 					console.error(id,err);
 				}
-				if (result) {
+				else if (result) {
 					var g = kml2geojson(layerid, result);
-					fs.writeFileSync('data/' + id + '.geojson', JSON.stringify(g));
 				}
-	
+
+				finished();
+
+				/*if (_.keys(completed) == 0) {
+					writeOntology();
+				}*/
+
 				/*
 				var numFeature = g.features  ? g.features.length : 0;
 				var numOverlay = g.overlays ? g.overlays.length : 0;
@@ -478,14 +579,20 @@ _.each(layers, function(L) {
 			});
 		})(id);
 
-		layerTags.push(ll);
 	}
+}
 
-	layerTags.push(ll);
-});
+join.then(writeOntology);
 
-var ontology = {
-	tags: layerTags,
-	properties: []
-};
-fs.writeFileSync('../layers.json', JSON.stringify(ontology));
+
+function writeOntology() {
+	console.log('Writing ontology..',layerTags.length,' tags');
+
+	var ontology = {
+		tags: layerTags,
+		properties: []
+	};
+	fs.writeFileSync('../layers.json', JSON.stringify(ontology));
+
+	console.log('Dependent KMLs to Download: ', dependentKML.length);
+}
