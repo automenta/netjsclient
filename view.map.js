@@ -174,7 +174,8 @@ function renderLeafletMap(s, o, v) {
 	tooltip.appendTo(mapdiv);
 	tooltip.hide();
 
-	var map = L.map(e).setView( configuration.mapDefaultLocation || [0,0], 11);
+	var map = L.map(e, {
+	}).setView( configuration.mapDefaultLocation || [0,0], 11);
 
 	/*L.tileLayer('http://{s}.tile.cloudmade.com/{key}/22677/256/{z}/{x}/{y}.png', {
 		attribution: 'Map data &copy; 2011 OpenStreetMap contributors, Imagery &copy; 2012 CloudMade',
@@ -182,10 +183,10 @@ function renderLeafletMap(s, o, v) {
 	}).addTo(map);*/
 
 	//http://leaflet-extras.github.io/leaflet-providers/preview/index.htmlfile
-	var OpenStreetMap_HOT = L.tileLayer('http://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+	var baseLayer = L.tileLayer('http://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
 		attribution: '&copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Tiles courtesy of <a href="http://hot.openstreetmap.org/" target="_blank">Humanitarian OpenStreetMap Team</a>'
 	});
-	OpenStreetMap_HOT.addTo(map);
+	baseLayer.addTo(map);
 	
 
 	var testIcon = L.icon({
@@ -332,10 +333,40 @@ function renderLeafletMap(s, o, v) {
 
 		}
 		else if (T.tileLayer) {
-			var tl = L.tileLayer(T.tileLayer, {
+			var template = T.tileLayer;
+			var options = {
 				attribution: ''
-			});
+			};
+			if (typeof template != "string") {
+				options = template;
+				template = options.template;
+
+				var d = new Date(Date.now() - 24 * 60 * 60 * 1000  /* 24hrs ago */);
+				var m = d.getMonth()+1;
+				var r = d.getDate()+1;
+				if (m <=9 ) m = '0' + m;
+				if (r <=9 ) r = '0' + r;
+				options.time = d.getFullYear() + '-' + m + '-' + r;
+			}
+			if (options.reprojected) {
+				if (options.format.indexOf("png")!=-1) {
+					//put PNG layers above, since they usually contain transparent image that could see through to a solid JPG layer beneath
+					options.zIndex = 101;
+				}
+				else
+					options.zIndex = 100;
+			}
+			
+
+			var tl = L.tileLayer(template, options);
+
+			if (options.reprojected) {
+				$.pnotify({title:"Map Re-projected", text:"The '" + T.name + "' layer uses an alternate map projection.  It may not appear aligned with other layers."});
+				tl.reprojects = true;
+			}
+
 			tl.setOpacity(strength);
+
 			tl.addTo(map);
 			onAdded(tl);
 		}
@@ -383,18 +414,48 @@ function renderLeafletMap(s, o, v) {
 			var A = adding[i];
 			addLayer(A, newlayers[A], function(added) {
 				map.layers[A] = added;
+				updateMap();
 			});			
 		}
 
 		//update opacities
+		var reprojects = 0;
+
 		for (var i = 0; i < same.length; i++) {
 			var S = same[i];
 			var SL = map.layers[S];
 			if (SL) {
-				if (SL.setOpacity)
-					SL.setOpacity(newlayers[S]);
+				if (SL.reprojects) {
+					reprojects++;
+				}
+			}
+		}
+
+		for (var i = 0; i < same.length; i++) {
+			var S = same[i];
+			var SL = map.layers[S];
+			if (SL) {
+				if (SL.setOpacity) {
+					if (SL.reprojects)
+						SL.setOpacity(newlayers[S]);
+					else {
+						if (!reprojects)
+							SL.setOpacity(newlayers[S]);
+						else {
+
+							SL.setOpacity(0);
+						}
+					}
+				}
+
 				//TODO setZIndex(..)
 			}
+		}
+		if (reprojects > 0) {
+			baseLayer.setOpacity(0);
+		}
+		else {
+			baseLayer.setOpacity(1.0);
 		}
 
 	}

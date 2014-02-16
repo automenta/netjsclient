@@ -1,7 +1,9 @@
+//http://wiki.openstreetmap.org/wiki/List_of_OSM_based_Services
+
 exports.layers = [
 	"Alerts",
-	//https://github.com/kr1/Leaflet.dbpediaLayer/
 
+	//https://github.com/kr1/Leaflet.dbpediaLayer/
 	{layer:"Points of Interest",source:'DBPedia.org',dbpediaLayer:true,icon:"http://climateviewer.com/gallery/lightning_bolt.png"},
 
 	{section:"Terrain",icon:"http://climateviewer.com/gallery/cv3d.png"},
@@ -64,12 +66,20 @@ exports.layers = [
 		{layer:"kml-femad",kml:"http://gis.fema.gov/kmz/data/DesignatedCountiesData.kmz",source:"Federal Emergency Management Agency (FEMA)",sourceURL:"http://gis.fema.gov/DataFeeds.html",name:"FEMA Current Disaster Declarations", tag:['Caution']},
 		{layer:"kml-femah",kml:"http://gis.fema.gov/kmz/HistoricDeclarations.kmz",source:"Federal Emergency Management Agency (FEMA)",sourceURL:"http://gis.fema.gov/DataFeeds.html",name:"FEMA Historical Disaster Declarations", tag:['Caution']},
 		{layer:"kml-femar",kml:"http://gis.fema.gov/kmz/data/FemaRegionsandFieldOfficesData.kmz",source:"Federal Emergency Management Agency (FEMA)",sourceURL:"http://gis.fema.gov/DataFeeds.html",name:"FEMA Regions and Field Offices", tag:['Caution']},
+
 	{section:"Satellite",icon:"http://climateviewer.com/gallery/satellite.png"},
+		//https://github.com/nasa-gibs/gibs-web-examples#live-examples
+		//http://map1.vis.earthdata.nasa.gov/twms-geo/twms.cgi 
+		//https://wiki.earthdata.nasa.gov/display/GIBS/GIBS+Available+Imagery+Products
+		//https://earthdata.nasa.gov/data/near-real-time-data/data
+
 		{layer:"kml-agi01",kml:"http://adn.agi.com/SatelliteDatabase/KmlNetworkLink.aspx",source:"Analytical Graphics, Inc. (AGI)",sourceURL:"http://www.agi.com/resources/satdb/satdbpc.aspx",name:"Satellite Tracker", tag:['Satellite']},
+
 		{section:"MODIS_Terra", name: "MODIS Terra", icon:"http://climateviewer.com/gallery/satellite.png", tag:['Satellite']},
 			{layer:"sat00",kml:"http://ge.ssec.wisc.edu/modis/modis-google-earth/terra_latest.kml",source:"Space Science and Engineering Center, University of Wisconsin-Madison",sourceURL:"http://ge.ssec.wisc.edu/modis-today/",name:"Continental USA (True Color)", tag:['MODIS_Terra']},
-			{layer:"kml-MODIS_Terra_CorrectedReflectance_TrueColor",kml:"on",source:"NASA Earth Observing System Data and Information System (EOSDIS) Global Imagery Browse Service (GIBS)",sourceURL:"https://earthdata.nasa.gov/",name:"Corrected Reflectance (True Color)", only3d: true, tag:['MODIS_Terra']},
-			{layer:"kml-MODIS_Terra_SurfaceReflectance_Bands143",kml:"on",source:"NASA Earth Observing System Data and Information System (EOSDIS) Global Imagery Browse Service (GIBS)",sourceURL:"https://earthdata.nasa.gov/",name:"Land Surface Reflectance (True Color)", only3d: true, tag:['MODIS_Terra']},
+
+			newMODISLayer("MODIS_Terra_CorrectedReflectance_TrueColor", "Corrected Reflectance (True Color)", "EPSG4326_250m"),
+			newMODISLayer("MODIS_Terra_SurfaceReflectance_Bands143", "Land Surface Reflectance (True Color)", "EPSG4326_500m"),
 			{layer:"kml-MODIS_Terra_CorrectedReflectance_Bands721",kml:"on",source:"NASA Earth Observing System Data and Information System (EOSDIS) Global Imagery Browse Service (GIBS)",sourceURL:"https://earthdata.nasa.gov/",name:"Corrected Reflectance (Bands 7-2-1)", only3d: true, tag:['MODIS_Terra']},
 			{layer:"kml-MODIS_Terra_SurfaceReflectance_Bands721",kml:"on",source:"NASA Earth Observing System Data and Information System (EOSDIS) Global Imagery Browse Service (GIBS)",sourceURL:"https://earthdata.nasa.gov/",name:"Land Surface Reflectance (Bands 7-2-1)", only3d: true, tag:['MODIS_Terra']},
 			{layer:"kml-MODIS_Terra_CorrectedReflectance_Bands367",kml:"on",source:"NASA Earth Observing System Data and Information System (EOSDIS) Global Imagery Browse Service (GIBS)",sourceURL:"https://earthdata.nasa.gov/",name:"Corrected Reflectance (Bands 3-6-7)", only3d: true, tag:['MODIS_Terra']},
@@ -87,7 +97,8 @@ exports.layers = [
 			{layer:"kml-MODIS_Terra_Cloud_Top_Temp_Day",kml:"on",source:"NASA Earth Observing System Data and Information System (EOSDIS) Global Imagery Browse Service (GIBS)",sourceURL:"https://earthdata.nasa.gov/",name:"Cloud Top Temperature (day)", only3d: true, tag:['MODIS_Terra']},
 			{layer:"kml-MODIS_Terra_Cloud_Top_Temp_Night",kml:"on",source:"NASA Earth Observing System Data and Information System (EOSDIS) Global Imagery Browse Service (GIBS)",sourceURL:"https://earthdata.nasa.gov/",name:"Cloud Top Temperature (night)", only3d: true, tag:['MODIS_Terra']},
 			{layer:"kml-MODIS_Terra_Data_No_Data",kml:"on",source:"NASA Earth Observing System Data and Information System (EOSDIS) Global Imagery Browse Service (GIBS)",sourceURL:"https://earthdata.nasa.gov/",name:"Data-No Data Mask", only3d: true, tag:['MODIS_Terra']},
-			{layer:"kml-MODIS_Terra_Aerosol",kml:"on",source:"NASA Earth Observing System Data and Information System (EOSDIS) Global Imagery Browse Service (GIBS)",sourceURL:"https://earthdata.nasa.gov/",name:"Aerosol Optical Depth", only3d: true, tag:['MODIS_Terra']},
+			newMODISLayer("MODIS_Terra_Aerosol", "Aerosol Optic Depth", "EPSG4326_2km","png"),
+
 			{layer:"kml-1571152",kml:"on",source:"NEO NASA Earth Observations",sourceURL:"http://neo.sci.gsfc.nasa.gov/view.php?datasetId=MODAL2_D_AER_OD",name:"Aerosol Optical Thickness(1 day)", only3d: true, tag:['MODIS_Terra']},
 			{layer:"kml-1571293",kml:"on",source:"NEO NASA Earth Observations",sourceURL:"http://neo.sci.gsfc.nasa.gov/view.php?datasetId=MODAL2_E_AER_OD",name:"Aerosol Optical Thickness(8 days)", only3d: true, tag:['MODIS_Terra']},
 			{layer:"kml-1570594",kml:"on",source:"NEO NASA Earth Observations",sourceURL:"http://neo.sci.gsfc.nasa.gov/view.php?datasetId=MODAL2_M_AER_OD",name:"Aerosol Optical Thickness(1 month)", only3d: true, tag:['MODIS_Terra']},
@@ -363,3 +374,47 @@ exports.layers = [
 	{section:"Load KML layer from URL",icon:"http://climateviewer.com/gallery/kml.png"},
 ];
 
+
+//http://map1.vis.earthdata.nasa.gov/wmts-geo/wmts.cgi?SERVICE=WMTS&request=GetCapabilities
+
+function nasaWMTS(layer, matrixset, format) {
+	if (!format) format = "jpeg";
+
+   var template =
+		"https://map1{s}.vis.earthdata.nasa.gov/wmts-geo/wmts.cgi" +
+		"?SERVICE=WMTS" +
+		"&REQUEST=GetTile" +
+		"&VERSION=1.0.0" +
+		"&LAYER={layer}" +
+		"&STYLE=" +
+		"&TILEMATRIXSET={tileMatrixSet}" +
+		"&TILEMATRIX={z}" +
+		"&TILEROW={y}" +
+		"&TILECOL={x}" +
+		"&FORMAT={format}" +
+		"&TIME={time}";
+
+	return {
+		template: template,
+		layer: layer,
+		tileMatrixSet: matrixset,
+		format: "image%2F" + format,
+		tileSize: 512,
+		subdomains: "abc",
+		noWrap: true,
+		continuousWorld: true,
+		attribution:
+			"<a href='https://earthdata.nasa.gov/gibs'>" +
+			"NASA EOSDIS GIBS</a>&nbsp;&nbsp;&nbsp;" +
+			"<a href='https://github.com/nasa-gibs/web-examples/blob/master/leaflet/js/geographic-epsg4326.js'>" +
+			"View Source" +
+			"</a>",
+		reprojected: true
+	};
+
+}
+
+
+function newMODISLayer(id,name,matrixset,format) {
+	return {layer:"modis-" + id,tileLayer:nasaWMTS(id,matrixset,format),source:"NASA Earth Observing System Data and Information System (EOSDIS) Global Imagery Browse Service (GIBS)",sourceURL:"https://earthdata.nasa.gov/",name:name, only3d: true, tag:['MODIS_Terra']}
+}
