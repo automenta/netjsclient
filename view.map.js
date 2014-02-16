@@ -205,7 +205,7 @@ function renderLeafletMap(s, o, v) {
 		var p = e.latlng;
 
 		//https://github.com/openplans/Leaflet.FeatureSelect/blob/gh-pages/js/feature-select.js
-		featureSelect.checkIntersections(e.containerPoint, p, _.values(map.layers), function(s) {
+		featureSelect.checkIntersections(e.layerPoint, p, _.values(map.layers), function(s) {
 			if (s.length == 0) return;
 
 			var nobs = s.map(function(g) {

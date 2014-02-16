@@ -13,7 +13,7 @@ var configuration = {
         "defaultTheme": "_cybernetic",
         "requireIdentity": true,
         "maxStartupObjects": 8192,
-        "defaultMapMode2D": true,
+        "defaultMapMode2D": false,
 		"mapDefaultLocation": [ 40.44, -80.0  ],
         "enableTogetherJS": false,
 		"viewUpdateMS": 850
